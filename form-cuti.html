@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Form Pengajuan Cuti</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #e4e8ee);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .card {
+            position: relative;
+            background: white;
+            width: 380px;
+            padding: 28px;
+            border-radius: 18px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            z-index: 1;
+        }
+
+        .header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 22px;
+        }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        input,
+        select {
+            width: 100%;
+            margin-top: 6px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            font-size: 14px;
+        }
+
+        /* BUTTON FLOATING */
+        button {
+            position: fixed;
+            /* 🔥 keluar dari card */
+            padding: 10px 18px;
+            border-radius: 999px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            background: #ef4444;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.35);
+            user-select: none;
+            z-index: 999;
+
+            transition:
+                left 0.14s ease-out,
+                top 0.14s ease-out,
+                background 0.25s ease,
+                box-shadow 0.12s ease;
+        }
+
+        /* flash */
+        button.flash {
+            box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.9);
+        }
+
+        .hint {
+            margin-top: 12px;
+            text-align: center;
+            font-size: 12px;
+            color: #9ca3af;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card" id="card">
+        <div class="header">
+            <h2>Pengajuan Cuti</h2>
+            <p>Isi formulir berikut untuk mengajukan cuti</p>
+        </div>
+
+        <div class="field">
+            <label>Nama</label>
+            <input type="text" placeholder="Nama lengkap">
+        </div>
+
+        <div class="field">
+            <label>Divisi</label>
+            <input type="text" placeholder="Divisi">
+        </div>
+
+        <div class="field">
+            <label>Alasan Cuti</label>
+            <select id="alasan">
+                <option>Capek</option>
+                <option>Mental health</option>
+                <option>Nikah</option>
+                <option>Healing (rebahan)</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Tanggal Cuti</label>
+            <input type="date">
+        </div>
+
+        <div class="hint" id="hint">// permission denied</div>
+    </div>
+
+    <button id="btn">Ajukan Cuti</button>
+
+    <script>
+        const btn = document.getElementById('btn');
+        const card = document.getElementById('card');
+        const alasan = document.getElementById('alasan');
+        const hint = document.getElementById('hint');
+
+        let isGreen = false;
+        let cooldown = false;
+        let excuseIndex = 0;
+
+        const excuses = [
+            'Ajukan Cuti',
+            'Yakin?',
+            'Sprint belum kelar',
+            'Deadline masih ada',
+            'Besok aja?',
+            'Besok aja ya?',
+            'Besok deh pls'
+        ];
+
+        // posisi awal: di bawah card
+        const cardRect = card.getBoundingClientRect();
+        btn.style.left = cardRect.left + 120 + 'px';
+        btn.style.top = cardRect.bottom + 20 + 'px';
+
+        function reflexMove(mouseX, mouseY) {
+            const maxX = window.innerWidth - btn.offsetWidth;
+            const maxY = window.innerHeight - btn.offsetHeight;
+
+            const btnX = btn.offsetLeft + btn.offsetWidth / 2;
+            const btnY = btn.offsetTop + btn.offsetHeight / 2;
+
+            let dx = btnX - mouseX;
+            let dy = btnY - mouseY;
+
+            const len = Math.hypot(dx, dy) || 1;
+            dx /= len;
+            dy /= len;
+
+            const distance = 120 + Math.random() * 80;
+
+            let newX = btn.offsetLeft + dx * distance;
+            let newY = btn.offsetTop + dy * distance;
+
+            newX = Math.max(0, Math.min(newX, maxX));
+            newY = Math.max(0, Math.min(newY, maxY));
+
+            btn.classList.add('flash');
+            setTimeout(() => btn.classList.remove('flash'), 120);
+
+            btn.style.left = newX + 'px';
+            btn.style.top = newY + 'px';
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (cooldown) return;
+
+            const btnX = btn.offsetLeft + btn.offsetWidth / 2;
+            const btnY = btn.offsetTop + btn.offsetHeight / 2;
+
+            const distance = Math.hypot(e.clientX - btnX, e.clientY - btnY);
+
+            // 🟢 kepepet banget → hijau
+            if (distance < 15 && !isGreen) {
+                isGreen = true;
+                btn.style.background = '#22c55e';
+                btn.textContent = 'Lanjut Kerja';
+                hint.textContent = '// hampir berhasil';
+                return;
+            }
+
+            // 🔴 hampir kena → kabur keluar form
+            if (distance < 80) {
+                cooldown = true;
+
+                reflexMove(e.clientX, e.clientY);
+
+                if (!isGreen) {
+                    btn.textContent = excuses[excuseIndex % excuses.length];
+                    excuseIndex++;
+                }
+
+                if (alasan.value === 'Capek') {
+                    hint.textContent = '// capek itu bukan alasan';
+                }
+
+                setTimeout(() => {
+                    cooldown = false;
+                }, 150);
+            }
+        });
+
+        btn.addEventListener('click', () => {
+            alert('Cuti berhasil diajukan.\n\n(ps: tetap kerja ya)');
+        });
+    </script>
+
+</body>
+
+</html>
